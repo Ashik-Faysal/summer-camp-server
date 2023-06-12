@@ -27,6 +27,22 @@ async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
+
+    const instructorsCollection = client.db("summerCamp").collection("instructor");
+
+
+    app.get('/instructor', async (req, res) => {
+      const body = req.body;
+      console.log(body);
+      const result = await instructorsCollection.find().toArray();
+      res.send(result);
+})
+
+
+
+
+
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
@@ -38,9 +54,6 @@ async function run() {
   }
 }
 run().catch(console.dir);
-
-
-
 
 
 app.get("/", (req, res) => {

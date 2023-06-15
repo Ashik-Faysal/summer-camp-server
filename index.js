@@ -1,5 +1,7 @@
 const express = require("express");
 const cors = require("cors");
+const { MongoClient, ServerApiVersion } = require("mongodb");
+
 const app = express();
 require("dotenv").config();
 const port = process.env.PORT || 5000;
@@ -10,7 +12,6 @@ app.use(express.json());
 
 
 
-const { MongoClient, ServerApiVersion } = require("mongodb");
 const uri =
   `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.hxpxamt.mongodb.net/?retryWrites=true&w=majority`;
 
@@ -29,19 +30,45 @@ async function run() {
     await client.connect();
 
     const instructorsCollection = client.db("summerCamp").collection("instructor");
-
-
-    app.get('/instructor', async (req, res) => {
-      const body = req.body;
-      console.log(body);
-      const result = await instructorsCollection.find().toArray();
-      res.send(result);
-})
+    const classesCollection = client.db("summerCamp").collection("classes");
+    const cartCollection = client.db("summerCamp").collection("carts");
 
 
 
+app.get("/instructor", async (req, res) => {
+  const result = await instructorsCollection.find().toArray();
+  res.json(result);
+});
 
 
+app.get("/classes", async (req, res) => {
+  try {
+    const classes = await classesCollection
+      .find({ availableSeats: { $gt: 0 } })
+      .toArray();
+    res.json(classes);
+  } catch (error) {
+    console.error("Failed to fetch classes", error);
+    res.status(500).json({ error: "Failed to fetch classes" });
+  }
+});
+    
+    
+
+   app.post("/carts", async (req, res) => {
+     const item = req.body;
+     const result = await cartCollection.insertOne(item);
+     res.send(result);
+   });
+
+
+app.get("/", (req, res) => {
+  res.send("Server is running");
+});
+
+app.listen(port, () => {
+  console.log(`Server is running on PORT: ${port}`);
+});
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
@@ -55,11 +82,3 @@ async function run() {
 }
 run().catch(console.dir);
 
-
-app.get("/", (req, res) => {
-  res.send("Server is running");
-});
-
-app.listen(port, () => {
-  console.log(`Server is running on PORT: ${port}`);
-});
